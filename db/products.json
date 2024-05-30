@@ -1,1 +1,12 @@
-[{"id":"46834ded-f54b-4013-bb09-ad4345cfcae6","title":"Producto Nuevo","description":"Descripcion nueva","price":200,"thumbnail":"imagen 24 ","code":1237,"stock":100,"status":true,"category":"prueba"}]
+[
+	{
+		"id": "06e969ab-bf31-4d09-b6c5-47923d2e0501",
+		"status": true,
+		"title": "Producto 1",
+		"description": "Descripcion1",
+		"category": "Categoria 1",
+		"code": "0001",
+		"price": 1000,
+		"stock": 100
+	}
+]
