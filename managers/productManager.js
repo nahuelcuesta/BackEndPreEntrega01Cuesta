@@ -58,21 +58,21 @@ class ProductManager {
         } catch (error) {
             console.error(error);
         }
-
-        deleteProduct = async (id) => {
-            try {
-                const products = await this.getProducts();
-                const productListed = products.find((product) => product.id === id);
-                if (!productListed) return null;
-                const productsUpdated = products.filter((product) => product.id !== id);
-                await fs.promises.writeFile(this.path, JSON.stringify(productsUpdated, null, "\t"));
-                return productListed;
-            } catch (error) {
-                console.error(error);
-            }
-        }
-
     }
+    deleteProduct = async (id) => {
+        try {
+            const products = await this.getProducts();
+            const productListed = products.find((product) => product.id === id);
+            if (!productListed) return null;
+            const productsUpdated = products.filter((product) => product.id !== id);
+            await fs.promises.writeFile(this.path, JSON.stringify(productsUpdated, null, "\t"));
+            return productListed;
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
 }
+
 
 export default ProductManager;
