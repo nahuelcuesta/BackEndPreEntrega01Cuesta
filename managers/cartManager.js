@@ -1,81 +1,82 @@
-import { promises as fs } from "fs";
+import fs from 'fs';
 import { v4 as uuidv4 } from "uuid";
 import ProductManager from "./productManager.js";
 import { __dirname } from "../path.js";
 
-const pManager = new ProductManager;
+const pManager = new ProductManager(`${__dirname}/db/products.json`);
 
 class CartManager {
-    constructor(path){
-        this.carts = [],
+    constructor(path) {
         this.path = path
-        this.loadCarts();
     }
-    async loadCarts() {
+
+    addCart = async () => {
         try {
-        this.carts = await this.readCarts();
+            const newCart = {
+                id: uuidv4(),
+                products: [],
+            };
+            const carts = await this.getCarts();
+            carts.push(newCart);
+            await fs.promises.writeFile(this.path, JSON.stringify(carts, null, '\t'));
+            return newCart;
         } catch (error) {
-        console.error("Error al cargar productos:", error);
-        this.carts = [];
+            console.error(error);
         }
     }
 
-    writeCarts = async (path, data) => {
-        await fs.writeFile(path, JSON.stringify(data));
-    };
-    readCarts = async () => {
+    addProductToCart = async (cartId, productId) => {
         try {
-            let response = await fs.readFile(this.path, "utf-8");
-            return response ? JSON.parse(response) : []; 
-        } catch (error) {
-            console.error("Error al leer carritos:", error);
-            return [];
-        }
-    };
-
-    addCart =  async ()=>{
-        const newCartId = uuidv4();
-        let newCart = {
-            id: newCartId,
-            products: []
-        }
-        this.carts.push(newCart)
-        await this.writeCarts(this.path, this.carts)
-    }
-
-    addProductToCart = async(cartId, productId)=>{
-    const dataCarts = await this.readCarts()
-    const cart = dataCarts.find(cart => cart.id === cartId)
-        if (!cart){
-            throw new Error(`el carrito con el id: ${cartId} no existe`)
-    }
-    const productData = await fs.readFile(pManager.path, 'utf-8')
-    const products = JSON.parse(productData);
-    const product = products.find(prod => prod.id == productId)
-    if (!product){
-        throw new Error(`El producto con el id: ${productId} no existe`)
-    }
-    cart.products.push({id:productId, quantity: 1});
-    await this.writeCarts(this.path, dataCarts);
-    }
-
-    getCarts = async ()=>{
-        let carts = await this.readCarts();
-        return carts;
-    }
-
-    getCartsById = async (id)=>{
-        try {
-            let carts = await this.readCarts();
-            let cartFilter = carts.find(cart => cart.id === id )
-            if (cartFilter !== undefined){
-                return cartFilter
-            }else {
-                throw new Error("No existe un carrito con el ID proporcionado");
+            const product = await pManager.getProductsById(productId);
+            if (!product) {
+                throw new Error("Producto no encontrado");
             }
+
+            let carts = await this.getCarts();
+            const cart = carts.find((cart) => cart.id === cartId);
+            if (!cart) {
+                throw new Error("Carrito no encontrado");
+            }
+
+            const productInCart = cart.products.find((prod) => prod.id === productId);
+            if (!productInCart) {
+                const prodToAdd = {
+                    id: productId,
+                    quantity: 1,
+                };
+                cart.products.push(prodToAdd);
+            } else {
+                productInCart.quantity++;
+            }
+
+            const cartsUpdated = carts.map((cart) => cart.id === cartId ? cart : cart);
+            await fs.promises.writeFile(this.path, JSON.stringify(cartsUpdated, null, '\t'));
+            return cart;
         } catch (error) {
-            console.error("Error al obtener productos por ID:", error);
+            console.error(error);
             throw error;
+        }
+    }
+
+    getCarts = async () => {
+        try {
+            if (fs.existsSync(this.path)) {
+                const cartsFile = await fs.promises.readFile(this.path, 'utf-8');
+                const carts = JSON.parse(cartsFile);
+                return carts;
+            } else return [];
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    getCartsById = async (id) => {
+        try {
+            const carts = await this.getCarts();
+            const cart = carts.find(cart => cart.id === id);
+            return cart || null;
+        } catch (error) {
+            console.error(error);
         }
     }
 }

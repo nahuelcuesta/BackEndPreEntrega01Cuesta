@@ -1,8 +1,12 @@
 import { Router } from "express";
 import ProductManager from "../managers/productManager.js";
-import { __dirname } from "../path.js"
+import { __dirname } from "../path.js";
+import { validationProd } from "../middlewares/validationProd.js";
+import { validationId } from "../middlewares/validationId.js";
 
-const pManager = new ProductManager((`${__dirname}/db/products.json`));
+const pManager = new ProductManager(`${__dirname}/db/products.json`);
+
+console.log(pManager.products);
 
 const router = Router();
 
@@ -18,12 +22,9 @@ const router = Router();
             data: [],
             });
         } else {
-        res
-            .status(200)
-            .json({ message: "Productos obtenidos con exito", data: products });
+        res.status(200).json({ message: "Productos obtenidos con exito", data: products });
         }
     } catch (error) {
-        console.log(error);
         res
         .status(500)
         .json({ message: `error al intentar recibir los productos` });
@@ -31,8 +32,9 @@ const router = Router();
     });
 
     router.get("/:pid", async (req, res) => {
-    const { pid } = req.params;
+    
     try {
+        const { pid } = req.params;
         const product = await pManager.getProductsById(pid);
         res.json(product);
         res
@@ -49,74 +51,31 @@ const router = Router();
     }
     });
 
-    router.post("/", async (req, res) => {
-    try {
-        const {
-        title,
-        description,
-        price,
-        thumbnail,
-        code,
-        stock,
-        status = true,
-        category,
-        } = req.body;
-        const response = await pManager.addProduct(
-        title,
-        description,
-        price,
-        thumbnail,
-        code,
-        stock,
-        status,
-        category
-        );
-        res
-        .status(201)
-        .json({ message: "Producto agregado exitosamente", data: response });
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ error: "Error al intentar agregar el producto" });
-    }
+    router.post("/", validationProd, async (req, res) => {
+        try {
+            const productObj = req.body;
+            const newProduct = await pManager.addProduct(productObj);
+            res.status(201).json(newProduct);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     });
 
-    router.put("/:pid", async (req, res) => {
-    const { pid } = req.params;
-    try {
-        const {
-        title,
-        description,
-        price,
-        thumbnail,
-        code,
-        stock,
-        status = true,
-        category,
-        } = req.body;
-        const response = await pManager.updateProduct(pid, {
-        title,
-        description,
-        price,
-        thumbnail,
-        code,
-        stock,
-        status,
-        category,
-        });
-        res
-        .status(201)
-        .json({ message: "producto actualizado con exito", data: response });
-    } catch (error) {
-        console.log(error);
-        res
-        .status(500)
-        .json({ error: `error al intentar editar producto con id: ${pid}` });
-    }
+    router.put("/:pid", validationId, async (req, res) => {
+        try {
+            const { productId } = req.params;
+            const productObj = req.body;
+            const productUpdated = await pManager.updateProduct(productId, productObj);
+            !productUpdated ? res.status(404).json({ error: "Product not found" }) : res.status(200).json(productUpdated);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     });
 
     router.delete("/:pid", async (req, res) => {
-    const { pid } = req.params;
+    
     try {
+        const { pid } = req.params;
         await pManager.deleteProduct(pid);
         res
         .status(200)
